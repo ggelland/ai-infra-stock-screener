@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Infrastructure Stock Screener</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="Screening controls">
+        <div class="brand">
+          <span class="brand-mark">AI</span>
+          <div>
+            <h1>Infra Screener</h1>
+            <p>Short-term AI infrastructure model</p>
+          </div>
+        </div>
+
+        <section class="control-group">
+          <div class="section-title">
+            <h2>Regime</h2>
+            <span id="regimeBadge">Risk-on</span>
+          </div>
+          <label>
+            Fed / liquidity pressure
+            <input id="ratePressure" type="range" min="0" max="100" value="42" />
+          </label>
+          <label>
+            AI capex momentum
+            <input id="aiCapex" type="range" min="0" max="100" value="86" />
+          </label>
+          <label>
+            Market breadth
+            <input id="breadth" type="range" min="0" max="100" value="58" />
+          </label>
+          <label>
+            Volatility stress
+            <input id="volStress" type="range" min="0" max="100" value="38" />
+          </label>
+        </section>
+
+        <section class="control-group">
+          <div class="section-title">
+            <h2>Model Weights</h2>
+            <button id="resetWeights" class="icon-button" title="Reset weights" aria-label="Reset weights">↺</button>
+          </div>
+          <label>
+            Technical momentum
+            <input id="wTechnical" type="range" min="0" max="100" value="34" />
+          </label>
+          <label>
+            AI / infra exposure
+            <input id="wTheme" type="range" min="0" max="100" value="30" />
+          </label>
+          <label>
+            Fundamentals quality
+            <input id="wQuality" type="range" min="0" max="100" value="20" />
+          </label>
+          <label>
+            Risk control
+            <input id="wRisk" type="range" min="0" max="100" value="16" />
+          </label>
+        </section>
+
+        <section class="control-group compact">
+          <h2>Filters</h2>
+          <label>
+            Minimum score
+            <input id="minScore" type="number" min="0" max="100" value="60" />
+          </label>
+          <label>
+            Portfolio size
+            <input id="portfolioSize" type="number" min="3" max="12" value="7" />
+          </label>
+          <label class="check-row">
+            <input id="preferLiquid" type="checkbox" checked />
+            Prefer liquid leaders
+          </label>
+        </section>
+
+        <section class="control-group compact">
+          <h2>Paper Trading</h2>
+          <label>
+            Starting capital
+            <input id="paperCapital" type="number" min="1000" step="1000" value="100000" />
+          </label>
+          <label>
+            Risk per trade %
+            <input id="riskPerTrade" type="number" min="0.25" max="5" step="0.25" value="1" />
+          </label>
+          <label>
+            Max open positions
+            <input id="maxOpenPositions" type="number" min="1" max="12" value="7" />
+          </label>
+          <button id="startPaperBtn" class="wide-button">Start / Rebalance Paper Program</button>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Macro + technical stock screening</p>
+            <h2>AI infrastructure tactical portfolio</h2>
+          </div>
+          <div class="actions">
+            <button id="importBtn">Import CSV</button>
+            <button id="markBtn">Import Price Marks</button>
+            <button id="exportBtn">Export Picks</button>
+            <button id="exportTradesBtn">Export Trades</button>
+            <input id="csvInput" type="file" accept=".csv" hidden />
+            <input id="markInput" type="file" accept=".csv" hidden />
+          </div>
+        </header>
+
+        <section class="metrics-grid" aria-label="Portfolio summary">
+          <article>
+            <span>Model stance</span>
+            <strong id="stance">Selective risk-on</strong>
+          </article>
+          <article>
+            <span>Avg score</span>
+            <strong id="avgScore">0</strong>
+          </article>
+          <article>
+            <span>Cash buffer</span>
+            <strong id="cashBuffer">0%</strong>
+          </article>
+          <article>
+            <span>Top trigger</span>
+            <strong id="topTrigger">Loading</strong>
+          </article>
+        </section>
+
+        <section class="paper-grid">
+          <article class="panel paper-panel">
+            <div class="panel-header">
+              <h3>Paper Trading Program</h3>
+              <div class="actions">
+                <button id="runSignalsBtn">Run Signal Check</button>
+                <button id="resetPaperBtn">Reset</button>
+              </div>
+            </div>
+            <div class="paper-metrics">
+              <article>
+                <span>Equity</span>
+                <strong id="paperEquity">$0</strong>
+              </article>
+              <article>
+                <span>Cash</span>
+                <strong id="paperCash">$0</strong>
+              </article>
+              <article>
+                <span>Total P&L</span>
+                <strong id="paperPnl">$0</strong>
+              </article>
+              <article>
+                <span>Open</span>
+                <strong id="paperOpen">0</strong>
+              </article>
+            </div>
+            <div id="paperStatus" class="status-line">Not started.</div>
+            <div class="table-wrap compact-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ticker</th>
+                    <th>Shares</th>
+                    <th>Entry</th>
+                    <th>Mark</th>
+                    <th>Stop</th>
+                    <th>Target</th>
+                    <th>P&L</th>
+                  </tr>
+                </thead>
+                <tbody id="positionRows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel marks-panel">
+            <div class="panel-header">
+              <h3>Price Marks</h3>
+              <span class="muted">CSV: ticker,price,date</span>
+            </div>
+            <div id="markGrid" class="mark-grid"></div>
+          </article>
+        </section>
+
+        <section class="main-grid">
+          <article class="panel score-panel">
+            <div class="panel-header">
+              <h3>Portfolio Allocation</h3>
+              <div class="pill-row">
+                <button class="pill active" data-view="ranked">Ranked</button>
+                <button class="pill" data-view="watchlist">Watchlist</button>
+              </div>
+            </div>
+            <div id="allocationChart" class="allocation-chart"></div>
+            <div id="portfolioList" class="portfolio-list"></div>
+          </article>
+
+          <article class="panel thesis-panel">
+            <div class="panel-header">
+              <h3>Thesis Inputs</h3>
+              <span class="muted">Editable model, not advice</span>
+            </div>
+            <div class="thesis-list">
+              <p><strong>AI accelerators:</strong> NVIDIA reported record FY2026 results, with data center revenue driving growth.</p>
+              <p><strong>Semiconductors:</strong> 2026 industry outlooks point to double-digit growth led by AI compute, networking, memory, and power.</p>
+              <p><strong>Infrastructure bottlenecks:</strong> Data center power, cooling, networking, and grid capacity remain central constraints.</p>
+              <p><strong>Risk:</strong> Crowded AI trades can reverse quickly if capex expectations, margins, rates, or export policy disappoint.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel table-panel">
+          <div class="panel-header">
+            <h3>Screened Universe</h3>
+            <input id="searchBox" type="search" placeholder="Search ticker or theme" />
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="ticker">Ticker</th>
+                  <th data-sort="name">Company</th>
+                  <th data-sort="score">Score</th>
+                  <th>Weight</th>
+                  <th data-sort="setup">Setup</th>
+                  <th>Execution Gate</th>
+                  <th>Entry</th>
+                  <th>Exit</th>
+                  <th data-sort="risk">Risk</th>
+                </tr>
+              </thead>
+              <tbody id="stockRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel detail-panel">
+          <div class="panel-header">
+            <h3 id="detailTitle">Select a ticker</h3>
+            <span id="detailBadge" class="score-badge">0</span>
+          </div>
+          <div id="detailBody" class="detail-body"></div>
+        </section>
+
+        <section class="panel trade-panel">
+          <div class="panel-header">
+            <h3>Trade Journal</h3>
+            <span id="lastSignalRun" class="muted">No signal checks yet</span>
+          </div>
+          <div class="table-wrap compact-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Action</th>
+                  <th>Ticker</th>
+                  <th>Price</th>
+                  <th>Shares</th>
+                  <th>Reason</th>
+                  <th>Realized P&L</th>
+                </tr>
+              </thead>
+              <tbody id="tradeRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js?v=execution-overlay-20260601"></script>
+  </body>
+</html>
